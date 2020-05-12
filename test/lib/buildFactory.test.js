@@ -1178,4 +1178,56 @@ describe('Build Factory', () => {
             });
         });
     });
+
+    describe.only('getLatestBuilds', () => {
+        let config;
+        let returnValue;
+        let queryConfig;
+
+        beforeEach(() => {
+            sinon.stub(BuildFactory.prototype, 'query').returns();
+
+            config = {
+                groupEventId: '12345'
+            };
+
+            returnValue = [
+                {
+                    jobId: 1,
+                    status: 'SUCCESS',
+                    id: 1
+                },
+                {
+                    jobId: 1,
+                    status: 'ABORTED',
+                    id: 2
+                }
+            ];
+
+            queryConfig = {
+                queries: [
+                    { dbType: 'postgres', query: BuildQueries.latestBuildQuery },
+                    { dbType: 'sqlite', query: BuildQueries.latestBuildQuery },
+                    { dbType: 'mysql', query: BuildQueries.latestBuildQueryMySql }
+                ],
+                replacements: {
+                    groupEventId: config.groupEventId
+                },
+                rawResponse: false,
+                table: 'builds'
+            };
+        });
+
+        it('returns latest builds for groupEventId', () => {
+            datastore.query.resolves(returnValue);
+
+            return factory.getLatestBuilds(config).then(latestBuilds => {
+                assert.calledWith(datastore.query, queryConfig);
+                latestBuilds.forEach(b => {
+                    // assert.deepEqual(b, { id: 1 });
+                    assert.instanceOf(b, Build);
+                });
+            });
+        });
+    });
 });
